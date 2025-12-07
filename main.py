@@ -14,7 +14,7 @@ def load_data():
         pd.DataFrame: DataFrame containing the concrete data
     """
     # TODO: Use pandas to read the Excel file 'data/concrete_data.xlsx'
-    df = None
+    df = pd.read_excel('data/concrete_data.xlsx')
     
     return df
 
@@ -32,20 +32,24 @@ def explore_data(df):
     print("DATA EXPLORATION")
     
     # TODO: Print the shape of the DataFrame
-    print(f"\nDataset shape: (rows, columns)")
+    print(f"\nDataset shape: {df.shape}")
     
     # TODO: Print the column names
-    print(f"\nColumn names:")
+    print(f"\nColumn names: {df.columns.tolist()}")
     
     # TODO: Display summary statistics using df.describe()
     print("\nSummary Statistics:")
+    print(df.describe())
     
     # TODO: Calculate correlation matrix and find feature most correlated with target
     # Target column is 'Concrete Compressive Strength'
     # Use df.corr() to get correlation matrix
     # Extract correlations with target and find the maximum (excluding target itself)
-    
-    most_correlated_feature = None  # TODO: Find the feature name with highest correlation to target
+    corr_matrix = df.corr()
+    target_col = "Concrete Compressive Strength"
+    target_corr = corr_matrix[target_col]
+    target_corr = target_corr.drop(labels=[target_col])
+    most_correlated_feature = target_corr.abs().idxmax()  # TODO: Find the feature name with highest correlation to target
     
     print(f"\nMost correlated feature with strength: {most_correlated_feature}")
     
@@ -66,22 +70,23 @@ def preprocess_data(df, test_size=0.2, random_state=42):
     """
     # TODO: Use pandas to separate features (X) and target (y)
     # Target column is 'Concrete Compressive Strength'
+    target_col = "Concrete Compressive Strength"
     # Hint: Use df.drop() or df.iloc[] or column selection
-    X = None  # All columns except target
-    y = None  # Target column only
+    X = df.drop(columns=[target_col])  # All columns except target
+    y = df[target_col]  # Target column only
     
     # Store feature names
     feature_names = X.columns.tolist()
     
     # TODO: Split into training and testing sets
-    X_train, X_test, y_train, y_test = None, None, None, None
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
     
     # TODO: Create a StandardScaler and fit it on training data
-    scaler = None
+    scaler = StandardScaler()
     
     # TODO: Transform both training and testing data
-    X_train_scaled = None
-    X_test_scaled = None
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
     
     return X_train_scaled, X_test_scaled, y_train, y_test, scaler, feature_names
 
@@ -100,10 +105,10 @@ def train_model(X_train, y_train, n_estimators=100, random_state=42):
         RandomForestRegressor: Trained model
     """
     # TODO: Create a RandomForestRegressor with the given parameters
-    model = None
+    model = RandomForestRegressor(n_estimators=n_estimators, random_state=random_state)
     
     # TODO: Fit the model on training data
-    
+    model.fit(X_train, y_train)
     return model
 
 
@@ -120,13 +125,13 @@ def evaluate_model(model, X_test, y_test):
         dict: Dictionary with 'mse' and 'r2' keys
     """
     # TODO: Make predictions on test data
-    y_pred = None
+    y_pred = model.predict(X_test)
     
     # TODO: Calculate Mean Squared Error
-    mse = None
+    mse = mean_squared_error(y_test, y_pred)
     
     # TODO: Calculate R-squared score
-    r2 = None
+    r2 = r2_score(y_test, y_pred)
     
     return {'mse': mse, 'r2': r2}
 
@@ -144,15 +149,15 @@ def get_feature_importance(model, feature_names, top_n=3):
         pd.DataFrame: DataFrame with columns ['Feature', 'Importance'] sorted by importance
     """
     # TODO: Get feature importances from the model
-    importances = None
+    importances = model.feature_importances_
     
     # TODO: Create a pandas DataFrame with feature names and importances
     # Columns should be: 'Feature' and 'Importance'
-    importance_df = None
+    importance_df = pd.DataFrame({'Feature': feature_names, 'Importance': importances})
     
     # TODO: Sort by importance (descending) and return top_n rows
     # Use pandas sort_values() and head()
-    top_features_df = None
+    top_features_df = importance_df.sort_values(by='Importance', ascending=False).head(top_n)
     
     return top_features_df
 
